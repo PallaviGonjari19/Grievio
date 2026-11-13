@@ -4,13 +4,13 @@ from .models import User, StudentProfile, StaffProfile
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'institution', 'is_verified', 'is_staff')
-    list_filter = ('role', 'is_verified', 'is_staff', 'institution')
+    list_display = ('username', 'email', 'role', 'institution', 'approval_status', 'is_verified', 'is_staff')
+    list_filter = ('role', 'approval_status', 'is_verified', 'is_staff', 'institution')
     fieldsets = UserAdmin.fieldsets + (
-        ('Grievio Details', {'fields': ('role', 'institution', 'phone', 'is_verified', 'avatar')}),
+        ('Grievio Details', {'fields': ('role', 'institution', 'approval_status', 'rejection_reason', 'phone', 'is_verified', 'avatar')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Grievio Details', {'fields': ('role', 'institution', 'phone', 'is_verified')}),
+        ('Grievio Details', {'fields': ('role', 'institution', 'approval_status', 'phone')}),
     )
 
 @admin.register(StudentProfile)
@@ -22,3 +22,4 @@ class StudentProfileAdmin(admin.ModelAdmin):
 class StaffProfileAdmin(admin.ModelAdmin):
     list_display = ('staff_id', 'user', 'department', 'designation')
     search_fields = ('staff_id', 'user__username', 'user__email')
+

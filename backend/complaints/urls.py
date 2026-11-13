@@ -14,3 +14,4 @@ urlpatterns = [
     path('<int:pk>/comments/', ComplaintCommentCreateView.as_view(), name='complaint_comment_create'),
     path('<int:pk>/attachments/', ComplaintAttachmentUploadView.as_view(), name='complaint_attachment_upload'),
 ]
+

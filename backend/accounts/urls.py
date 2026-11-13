@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
 )
-from .views import CurrentUserView, RegisterView, LogoutView
+from .views import CurrentUserView, RegisterView, LogoutView, PendingUsersListView, ApproveUserView
 
 urlpatterns = [
     # JWT Authentication Endpoints
@@ -12,8 +12,11 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
-    # Registration & Profile
+    # Registration, Verification & Profile
     path('register/', RegisterView.as_view(), name='register'),
     path('me/', CurrentUserView.as_view(), name='current_user'),
+    path('pending-users/', PendingUsersListView.as_view(), name='pending_users'),
+    path('users/<int:pk>/approve/', ApproveUserView.as_view(), name='approve_user'),
     path('logout/', LogoutView.as_view(), name='logout'),
 ]
+

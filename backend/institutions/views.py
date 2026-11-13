@@ -41,3 +41,4 @@ class CampusLocationListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(institution=self.request.user.institution)
+

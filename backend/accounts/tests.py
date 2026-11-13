@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from institutions.models import Institution
-from accounts.models import User, UserRole
+from accounts.models import User, UserRole, ApprovalStatus
 
 class HealthAndAuthTests(TestCase):
     def setUp(self):
@@ -12,6 +12,14 @@ class HealthAndAuthTests(TestCase):
             name="Apex Institute of Technology",
             code="APEX-TECH",
             contact_email="admin@apex.edu"
+        )
+        self.admin_user = User.objects.create_user(
+            username="apex_admin",
+            email="admin@apex.edu",
+            password="AdminPassword123!",
+            role=UserRole.ADMIN,
+            institution=self.institution,
+            approval_status=ApprovalStatus.APPROVED
         )
 
     def test_health_check_endpoint(self):
@@ -29,7 +37,8 @@ class HealthAndAuthTests(TestCase):
         data = response.json()
         self.assertIn('endpoints', data)
 
-    def test_student_registration_and_token(self):
+    def test_student_registration_approval_workflow(self):
+        # 1. Student registers with college code
         register_url = reverse('register')
         payload = {
             "username": "student1",
@@ -40,14 +49,24 @@ class HealthAndAuthTests(TestCase):
         }
         res = self.client.post(register_url, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res.data['username'], 'student1')
+        user = User.objects.get(username="student1")
+        # Must be in PENDING status
+        self.assertEqual(user.approval_status, ApprovalStatus.PENDING)
+        self.assertFalse(user.is_approved())
 
-        # Test JWT token acquisition
-        token_url = reverse('token_obtain_pair')
-        token_res = self.client.post(token_url, {
-            "username": "student1",
-            "password": "StrongPassword123!"
-        }, format='json')
-        self.assertEqual(token_res.status_code, status.HTTP_200_OK)
-        self.assertIn('access', token_res.data)
-        self.assertIn('refresh', token_res.data)
+        # 2. College Admin lists pending users
+        self.client.force_authenticate(user=self.admin_user)
+        pending_url = reverse('pending_users')
+        pending_res = self.client.get(pending_url)
+        self.assertEqual(pending_res.status_code, status.HTTP_200_OK)
+        results = pending_res.data.get('results', pending_res.data)
+        self.assertTrue(any(u['username'] == 'student1' for u in results))
+
+        # 3. College Admin approves student
+        approve_url = reverse('approve_user', kwargs={'pk': user.id})
+        approve_res = self.client.post(approve_url, {'action': 'approve'}, format='json')
+        self.assertEqual(approve_res.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertEqual(user.approval_status, ApprovalStatus.APPROVED)
+        self.assertTrue(user.is_approved())

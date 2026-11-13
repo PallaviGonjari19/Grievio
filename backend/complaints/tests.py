@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from institutions.models import Institution
 from departments.models import Department, ComplaintCategory
-from accounts.models import User, UserRole
+from accounts.models import User, UserRole, ApprovalStatus
 from complaints.models import Complaint, ComplaintStatus
 
 class ComplaintIsolationTests(TestCase):
@@ -18,17 +18,24 @@ class ComplaintIsolationTests(TestCase):
         self.dept_beta = Department.objects.create(institution=self.inst2, name="Electrical")
         self.cat_beta = ComplaintCategory.objects.create(department=self.dept_beta, name="Lighting")
 
+        # Approved student Alpha
         self.student_alpha = User.objects.create_user(
             username="student_alpha", email="s@alpha.edu", password="Password123",
-            role=UserRole.STUDENT, institution=self.inst1
+            role=UserRole.STUDENT, institution=self.inst1, approval_status=ApprovalStatus.APPROVED
         )
         self.student_alpha_2 = User.objects.create_user(
             username="student_alpha_2", email="s2@alpha.edu", password="Password123",
-            role=UserRole.STUDENT, institution=self.inst1
+            role=UserRole.STUDENT, institution=self.inst1, approval_status=ApprovalStatus.APPROVED
         )
+        # Approved student Beta
         self.student_beta = User.objects.create_user(
             username="student_beta", email="s@beta.edu", password="Password123",
-            role=UserRole.STUDENT, institution=self.inst2
+            role=UserRole.STUDENT, institution=self.inst2, approval_status=ApprovalStatus.APPROVED
+        )
+        # Pending student Alpha (not approved yet)
+        self.pending_student = User.objects.create_user(
+            username="pending_student", email="p@alpha.edu", password="Password123",
+            role=UserRole.STUDENT, institution=self.inst1, approval_status=ApprovalStatus.PENDING
         )
 
         # Create complaints
@@ -70,3 +77,12 @@ class ComplaintIsolationTests(TestCase):
         results = res.data.get('results', res.data)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['id'], self.comp_beta.id)
+
+    def test_pending_student_access_denied(self):
+        client = APIClient()
+        client.force_authenticate(user=self.pending_student)
+
+        url = reverse('complaint_list_create')
+        res = client.get(url)
+        # Pending users must NOT access protected grievance features
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)

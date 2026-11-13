@@ -6,3 +6,4 @@ urlpatterns = [
     path('current/', CurrentInstitutionView.as_view(), name='current_institution'),
     path('locations/', CampusLocationListView.as_view(), name='campus_locations'),
 ]
+

@@ -27,7 +27,7 @@ export default function LoginPage() {
         </div>
 
         {/* Role Selector Pills */}
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl text-[11px] font-semibold">
           <button
             type="button"
             onClick={() => setRole('student')}
@@ -48,6 +48,13 @@ export default function LoginPage() {
             className={`py-2 rounded-lg transition ${role === 'admin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
           >
             Admin
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole('superadmin')}
+            className={`py-2 rounded-lg transition ${role === 'superadmin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            Superadmin
           </button>
         </div>
 
@@ -116,3 +123,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

@@ -10,9 +10,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'role', 'institution', 'institution_name', 'institution_code',
-            'phone', 'is_verified', 'avatar'
+            'phone', 'approval_status', 'rejection_reason', 'is_verified', 'avatar'
         ]
-        read_only_fields = ['id', 'is_verified']
+        read_only_fields = ['id', 'approval_status', 'rejection_reason', 'is_verified']
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
@@ -39,3 +39,4 @@ class RegisterSerializer(serializers.ModelSerializer):
         
         user.save()
         return user
+

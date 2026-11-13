@@ -1,10 +1,22 @@
 from django.db import models
 from django.utils.text import slugify
 
+class InstitutionStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending Approval'
+    ACTIVE = 'ACTIVE', 'Active'
+    SUSPENDED = 'SUSPENDED', 'Suspended'
+    DEACTIVATED = 'DEACTIVATED', 'Deactivated'
+
 class Institution(models.Model):
     name = models.CharField(max_length=200, help_text="Official name of the university or college.")
     code = models.CharField(max_length=30, unique=True, help_text="Unique short code used by students/staff (e.g., MIT-ENG).")
     slug = models.SlugField(max_length=220, unique=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=InstitutionStatus.choices,
+        default=InstitutionStatus.ACTIVE,
+        help_text="Platform status managed exclusively by Super Administrator."
+    )
     address = models.TextField(blank=True)
     contact_email = models.EmailField()
     contact_phone = models.CharField(max_length=30, blank=True)
@@ -17,6 +29,7 @@ class Institution(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(f"{self.name}-{self.code}")
+        self.is_active = (self.status == InstitutionStatus.ACTIVE)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -39,3 +52,4 @@ class CampusLocation(models.Model):
         if self.room_number:
             parts.append(self.room_number)
         return f"{' - '.join(parts)} ({self.institution.code})"
+

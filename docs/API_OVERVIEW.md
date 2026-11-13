@@ -21,8 +21,10 @@ Auth Scheme: `Authorization: Bearer <access_token>`
 | :--- | :--- | :--- | :---: |
 | `POST` | `/api/v1/accounts/token/` | Obtain JWT access + refresh tokens | No |
 | `POST` | `/api/v1/accounts/token/refresh/` | Refresh expired access token | No |
-| `POST` | `/api/v1/accounts/register/` | Register new student or staff account | No |
-| `GET` | `/api/v1/accounts/me/` | Current user profile, role, & institution | Yes |
+| `POST` | `/api/v1/accounts/register/` | Register student/staff (defaults to `PENDING` approval) | No |
+| `GET` | `/api/v1/accounts/me/` | Current user profile, approval status, & institution | Yes |
+| `GET` | `/api/v1/accounts/pending-users/` | List pending registrations for college admin's institution | Yes (Admin) |
+| `POST` | `/api/v1/accounts/users/{id}/approve/` | Approve or reject registration (`action: 'approve'/'reject'`) | Yes (Admin) |
 | `POST` | `/api/v1/accounts/logout/` | Blacklist refresh token & terminate session | Yes |
 
 ---
@@ -32,8 +34,8 @@ Auth Scheme: `Authorization: Bearer <access_token>`
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
 | `GET` | `/api/v1/institutions/lookup/?code={code}` | Verify college code & fetch public profile | No |
-| `GET` | `/api/v1/institutions/current/` | Fetch current authenticated institution details | Yes (Admin/Staff/Student) |
-| `GET` | `/api/v1/institutions/locations/` | List campus blocks, floors, and rooms | Yes |
+| `GET` | `/api/v1/institutions/current/` | Fetch current authenticated institution details | Yes (Approved User) |
+| `GET` | `/api/v1/institutions/locations/` | List campus blocks, floors, and rooms | Yes (Approved User) |
 
 ---
 
@@ -41,8 +43,8 @@ Auth Scheme: `Authorization: Bearer <access_token>`
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
-| `GET` | `/api/v1/departments/` | List departments for active institution | Yes |
-| `GET` | `/api/v1/departments/{id}/categories/`| List grievance categories under department | Yes |
+| `GET` | `/api/v1/departments/` | List departments for active institution | Yes (Approved User) |
+| `GET` | `/api/v1/departments/{id}/categories/`| List grievance categories under department | Yes (Approved User) |
 
 ---
 
@@ -50,12 +52,12 @@ Auth Scheme: `Authorization: Bearer <access_token>`
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
-| `GET` | `/api/v1/complaints/` | List complaints (filtered by user role & tenant) | Yes |
-| `POST` | `/api/v1/complaints/` | Submit a new grievance (Students only) | Yes (Student) |
-| `GET` | `/api/v1/complaints/{id}/` | Retrieve full complaint details, history & media | Yes |
+| `GET` | `/api/v1/complaints/` | List complaints (strictly filtered by role & tenant) | Yes (Approved User) |
+| `POST` | `/api/v1/complaints/` | Submit a new grievance (Approved Students only) | Yes (Approved Student) |
+| `GET` | `/api/v1/complaints/{id}/` | Full complaint details, history & attachments | Yes (Approved User) |
 | `PATCH`| `/api/v1/complaints/{id}/status/` | Update ticket status with resolution proof | Yes (Staff/Admin) |
-| `POST` | `/api/v1/complaints/{id}/comments/`| Add student/staff communication note | Yes |
-| `POST` | `/api/v1/complaints/{id}/reopen/` | Dispute resolution and request reopening | Yes (Student) |
+| `POST` | `/api/v1/complaints/{id}/comments/`| Add student/staff communication note | Yes (Approved User) |
+| `POST` | `/api/v1/complaints/{id}/attachments/`| Upload photo evidence or resolution proof | Yes (Approved User) |
 
 ---
 
@@ -63,6 +65,6 @@ Auth Scheme: `Authorization: Bearer <access_token>`
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
-| `GET` | `/api/v1/notifications/` | List user in-app notifications | Yes |
-| `PATCH`| `/api/v1/notifications/{id}/read/` | Mark notification as read | Yes |
-| `GET` | `/api/v1/reporting/dashboard/` | Institution analytics (SLA, open/closed count) | Yes (Admin) |
+| `GET` | `/api/v1/notifications/` | List user in-app notifications | Yes (Approved User) |
+| `PATCH`| `/api/v1/notifications/{id}/read/` | Mark notification as read | Yes (Approved User) |
+| `GET` | `/api/v1/reporting/dashboard/` | Institution analytics (SLA, open/closed counts) | Yes (Admin) |

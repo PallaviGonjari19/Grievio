@@ -6,3 +6,4 @@ urlpatterns = [
     path('<int:pk>/', DepartmentDetailView.as_view(), name='department_detail'),
     path('<int:department_id>/categories/', DepartmentCategoriesListView.as_view(), name='department_categories'),
 ]
+

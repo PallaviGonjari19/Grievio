@@ -12,3 +12,4 @@ class ComplaintCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'department', 'default_priority', 'is_active')
     search_fields = ('name', 'department__name')
     list_filter = ('department__institution', 'default_priority', 'is_active')
+

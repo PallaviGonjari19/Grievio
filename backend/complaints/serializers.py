@@ -53,3 +53,4 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
         model = Complaint
         fields = '__all__'
         read_only_fields = ['ticket_number', 'institution', 'student', 'created_at', 'updated_at', 'resolved_at', 'closed_at']
+

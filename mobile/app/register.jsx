@@ -33,6 +33,12 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Join Your Campus</Text>
         <Text style={styles.subtitle}>Register your Grievio account with institution approval</Text>
+        
+        <View style={styles.noticeBox}>
+          <Text style={styles.noticeText}>
+            Notice: All registrations require verification by your College Administrator. Pending accounts cannot file grievances until approved.
+          </Text>
+        </View>
 
         <View style={styles.form}>
           <View style={styles.fieldGroup}>
@@ -128,7 +134,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textMuted,
     marginTop: SPACING.xs,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
+  },
+  noticeBox: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fef3c7',
+    borderWidth: 1,
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm + 2,
+    marginBottom: SPACING.md,
+  },
+  noticeText: {
+    fontSize: 11,
+    color: '#92400e',
+    lineHeight: 16,
   },
   form: {
     backgroundColor: COLORS.card,
@@ -179,3 +198,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

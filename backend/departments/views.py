@@ -40,3 +40,4 @@ class DepartmentCategoriesListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         dept_id = self.kwargs.get('department_id')
         serializer.save(department_id=dept_id)
+

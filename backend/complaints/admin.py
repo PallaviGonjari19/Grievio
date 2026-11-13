@@ -33,3 +33,4 @@ class ComplaintCommentAdmin(admin.ModelAdmin):
 @admin.register(ComplaintTimeline)
 class ComplaintTimelineAdmin(admin.ModelAdmin):
     list_display = ('complaint', 'actor', 'action', 'created_at')
+

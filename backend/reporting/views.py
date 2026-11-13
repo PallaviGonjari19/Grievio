@@ -55,3 +55,4 @@ class DashboardMetricsView(APIView):
             "by_priority": priority_breakdown,
             "top_departments": department_breakdown,
         }, status=status.HTTP_200_OK)
+

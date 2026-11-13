@@ -1,9 +1,11 @@
 from django.utils import timezone
+from django.db.models import Q
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from accounts.models import UserRole
+from accounts.permissions import IsApprovedUser
 from .models import Complaint, ComplaintAttachment, ComplaintComment, ComplaintTimeline, ComplaintStatus
 from .serializers import (
     ComplaintListSerializer,
@@ -13,7 +15,7 @@ from .serializers import (
 )
 
 class ComplaintListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -39,11 +41,11 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
         if user.role == UserRole.STUDENT:
             return base_qs.filter(student=user)
 
-        # 3. Department Staff: only complaints for their assigned department
+        # 3. Department Staff: complaints assigned to their department OR directly assigned to them
         elif user.role == UserRole.STAFF:
             try:
                 staff_dept = user.staff_profile.department
-                return base_qs.filter(department=staff_dept)
+                return base_qs.filter(Q(department=staff_dept) | Q(assigned_staff=user))
             except Exception:
                 return base_qs.filter(assigned_staff=user)
 
@@ -57,6 +59,9 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
         user = self.request.user
         if not user.institution:
             raise PermissionDenied("User is not affiliated with any active educational institution.")
+        
+        if user.role != UserRole.STUDENT:
+            raise PermissionDenied("Only registered students can submit grievances.")
         
         complaint = serializer.save(
             student=user,
@@ -74,7 +79,7 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
 
 class ComplaintDetailView(generics.RetrieveAPIView):
     serializer_class = ComplaintDetailSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
 
     def get_queryset(self):
         user = self.request.user
@@ -88,14 +93,15 @@ class ComplaintDetailView(generics.RetrieveAPIView):
             return base_qs.filter(student=user)
         elif user.role == UserRole.STAFF:
             try:
-                return base_qs.filter(department=user.staff_profile.department)
+                staff_dept = user.staff_profile.department
+                return base_qs.filter(Q(department=staff_dept) | Q(assigned_staff=user))
             except Exception:
                 return base_qs.filter(assigned_staff=user)
         return base_qs
 
 class ComplaintStatusUpdateView(APIView):
     """Transition complaint status with resolution notes and audit logging."""
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
 
     def patch(self, request, pk):
         user = request.user
@@ -106,6 +112,13 @@ class ComplaintStatusUpdateView(APIView):
 
         if user.role not in [UserRole.STAFF, UserRole.ADMIN, UserRole.SUPERADMIN]:
             return Response({"error": "Only authorized staff or administrators can update status."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Staff can only update if assigned to department or ticket
+        if user.role == UserRole.STAFF:
+            is_assigned_staff = (complaint.assigned_staff == user)
+            is_dept_match = hasattr(user, 'staff_profile') and complaint.department == user.staff_profile.department
+            if not (is_assigned_staff or is_dept_match):
+                return Response({"error": "You are not authorized to update complaints outside your department."}, status=status.HTTP_403_FORBIDDEN)
 
         new_status = request.data.get('status')
         resolution_notes = request.data.get('resolution_notes', '')
@@ -133,7 +146,7 @@ class ComplaintStatusUpdateView(APIView):
 
 class ComplaintCommentCreateView(generics.CreateAPIView):
     serializer_class = ComplaintCommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
 
     def perform_create(self, serializer):
         complaint_id = self.kwargs.get('pk')
@@ -142,16 +155,22 @@ class ComplaintCommentCreateView(generics.CreateAPIView):
         
         # Student cannot comment on another's complaint
         if user.role == UserRole.STUDENT and complaint.student != user:
-            raise PermissionDenied("You cannot comment on this grievance.")
+            raise PermissionDenied("You cannot comment on another student's grievance.")
             
         serializer.save(complaint=complaint, author=user)
 
 class ComplaintAttachmentUploadView(generics.CreateAPIView):
     serializer_class = ComplaintAttachmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
 
     def perform_create(self, serializer):
         complaint_id = self.kwargs.get('pk')
         user = self.request.user
         complaint = Complaint.objects.get(pk=complaint_id, institution=user.institution)
+        
+        # Student cannot attach to another's complaint
+        if user.role == UserRole.STUDENT and complaint.student != user:
+            raise PermissionDenied("You cannot attach files to another student's grievance.")
+            
         serializer.save(complaint=complaint, uploaded_by=user)
+

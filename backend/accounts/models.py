@@ -7,6 +7,11 @@ class UserRole(models.TextChoices):
     ADMIN = 'ADMIN', 'College Administrator'
     SUPERADMIN = 'SUPERADMIN', 'Platform Super Admin'
 
+class ApprovalStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending Approval'
+    APPROVED = 'APPROVED', 'Approved'
+    REJECTED = 'REJECTED', 'Rejected'
+
 class User(AbstractUser):
     role = models.CharField(
         max_length=20,
@@ -23,9 +28,19 @@ class User(AbstractUser):
         help_text="Institution this user belongs to. Null for platform superadmins."
     )
     phone = models.CharField(max_length=20, blank=True)
+    approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.PENDING,
+        help_text="Registration approval status managed by college administrator."
+    )
+    rejection_reason = models.TextField(
+        blank=True,
+        help_text="Reason provided by administrator if registration was rejected."
+    )
     is_verified = models.BooleanField(
         default=False,
-        help_text="Designates whether this user has been verified by college administration."
+        help_text="Designates whether this user has been approved by college administration."
     )
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
@@ -40,6 +55,18 @@ class User(AbstractUser):
 
     def is_platform_superadmin(self):
         return self.role == UserRole.SUPERADMIN or self.is_superuser
+
+    def is_approved(self):
+        return self.is_platform_superadmin() or self.approval_status == ApprovalStatus.APPROVED
+
+    def save(self, *args, **kwargs):
+        # Synchronize is_verified flag with approval_status
+        if self.is_platform_superadmin() or self.role == UserRole.ADMIN:
+            # Platform superadmins and designated initial admins are approved
+            if not self.pk and self.approval_status == ApprovalStatus.PENDING:
+                self.approval_status = ApprovalStatus.APPROVED
+        self.is_verified = (self.approval_status == ApprovalStatus.APPROVED)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
@@ -72,3 +99,4 @@ class StaffProfile(models.Model):
 
     def __str__(self):
         return f"Staff {self.staff_id} - {self.user.get_full_name() or self.user.username}"
+

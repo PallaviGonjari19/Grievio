@@ -24,6 +24,9 @@ export default function RegisterPage() {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Campus Registration</h2>
           <p className="text-xs text-slate-500">Join your institution's Grievio resolution network</p>
+          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200/60 text-[11px] text-amber-800 text-left">
+            ℹ️ <strong>Approval Notice:</strong> Registrations are placed in <em>Pending Approval</em> status and must be verified by your College Administrator before accessing grievance submission.
+          </div>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-4">
@@ -106,3 +109,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

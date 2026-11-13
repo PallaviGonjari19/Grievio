@@ -15,3 +15,4 @@ class DepartmentSerializer(serializers.ModelSerializer):
         model = Department
         fields = ['id', 'institution', 'name', 'description', 'head_email', 'sla_hours', 'is_active', 'categories']
         read_only_fields = ['institution']
+

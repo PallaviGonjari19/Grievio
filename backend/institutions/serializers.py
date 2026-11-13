@@ -15,3 +15,4 @@ class CampusLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CampusLocation
         fields = ['id', 'institution', 'block_name', 'floor', 'room_number', 'description']
+

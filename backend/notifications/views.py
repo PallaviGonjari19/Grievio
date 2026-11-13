@@ -22,3 +22,4 @@ class MarkNotificationReadView(APIView):
             return Response({"status": "marked as read"}, status=status.HTTP_200_OK)
         except Notification.DoesNotExist:
             return Response({"error": "Notification not found."}, status=status.HTTP_404_NOT_FOUND)
+
