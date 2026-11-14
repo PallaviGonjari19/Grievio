@@ -48,5 +48,23 @@ export const checkHealth = async () => {
   }
 };
 
+export const lookupCollegeCode = async (code) => {
+  const res = await mobileApi.get(`/institutions/lookup/?code=${code.trim().toUpperCase()}`);
+  return res.data;
+};
+
+export const loginUser = async (username, password) => {
+  const tokenRes = await mobileApi.post('/accounts/token/', { username, password });
+  const { access, refresh } = tokenRes.data;
+  setAuthToken(access);
+  const profileRes = await mobileApi.get('/accounts/me/');
+  return { tokens: tokenRes.data, user: profileRes.data };
+};
+
+export const registerUser = async (data) => {
+  const res = await mobileApi.post('/accounts/register/', data);
+  return res.data;
+};
+
 export default mobileApi;
 

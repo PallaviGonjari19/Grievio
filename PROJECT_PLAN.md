@@ -233,13 +233,15 @@ stateDiagram-v2
 - [x] Expo mobile client with Expo Router, welcome screens, and cross-platform API service.
 - [x] Automated test suite verifying health, JWT authentication, registration approval, and strict multi-tenant isolation (6/6 tests passing).
 
-### Phase 2: Authentication & Approval System Implementation
-- [ ] JWT authentication flows in Web and Mobile (login, token refresh, auto-retry on 401).
-- [ ] Student registration UI with college code lookup and instant validation.
-- [ ] College Admin registration review console (one-click approval/rejection with reason).
-- [ ] Role-based route guards in React Web and Expo Router.
+### Phase 2: Authentication & Approval System Implementation (Current Status: Complete)
+- [x] JWT authentication flows in Web and Mobile (login, token refresh, auto-retry on 401).
+- [x] Student registration UI with college code lookup and instant validation.
+- [x] College Admin registration review console (one-click approval/rejection with reason).
+- [x] Role-based route guards in React Web and Expo Router.
+- [x] Database seed command (`seed_demo_data`) with realistic multi-institution test accounts.
+- [x] Automated test suite expanded to 15 comprehensive security & role tests (15/15 passing).
 
-### Phase 3: Grievance Lifecycle Engine & Evidence Uploads
+### Phase 3: Grievance Lifecycle Engine & Evidence Uploads (Current Status: In Progress)
 - [ ] Multi-step grievance filing form (department selection, category, campus location picker, camera/gallery upload).
 - [ ] Department technician workbench (inbox, status transition controls, resolution proof upload).
 - [ ] Real-time timeline audit trail and bidirectional public/internal comment threads.

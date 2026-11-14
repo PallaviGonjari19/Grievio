@@ -7,25 +7,59 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   ScrollView,
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, SPACING, RADIUS } from '../src/constants/theme';
+import { registerUser } from '../src/services/api';
 
 export default function RegisterScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const [collegeCode, setCollegeCode] = useState(params.code || '');
+  const [collegeCode, setCollegeCode] = useState(params.code || 'APEX-TECH');
+  const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    Alert.alert(
-      'Registration Submitted',
-      `Your account request for college [${collegeCode}] has been queued for verification. Backend API connected.`
-    );
+  const handleRegister = async () => {
+    if (!collegeCode.trim() || !username.trim() || !email.trim() || !password) {
+      Alert.alert('Missing Fields', 'Please fill in all required fields including college code and password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const parts = fullName.trim().split(' ');
+      const firstName = parts[0] || username;
+      const lastName = parts.slice(1).join(' ') || '';
+
+      await registerUser({
+        username: username.trim(),
+        first_name: firstName,
+        last_name: lastName,
+        email: email.trim(),
+        password,
+        role: 'STUDENT',
+        institution_code: collegeCode.trim().toUpperCase(),
+      });
+
+      setLoading(false);
+      Alert.alert(
+        'Registration Submitted',
+        `Your account has been created in PENDING status for college [${collegeCode.toUpperCase()}]. Your College Administrator must approve your account before you can log in.`,
+        [
+          { text: 'Go to Sign In', onPress: () => router.push({ pathname: '/login', params: { code: collegeCode } }) }
+        ]
+      );
+    } catch (err) {
+      setLoading(false);
+      const detail = err.response?.data?.institution_code || err.response?.data?.username || err.response?.data?.detail || 'Registration failed. Please check inputs.';
+      Alert.alert('Registration Error', Array.isArray(detail) ? detail.join(' ') : String(detail));
+    }
   };
 
   return (
@@ -54,6 +88,18 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
+            <Text style={styles.label}>USERNAME *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. jordan.m2024"
+              placeholderTextColor={COLORS.textMuted}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
             <Text style={styles.label}>FULL NAME *</Text>
             <TextInput
               style={styles.input}
@@ -78,7 +124,7 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>STUDENT ROLL NUMBER / STAFF ID *</Text>
+            <Text style={styles.label}>STUDENT ROLL NUMBER / STAFF ID</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. 2025MECH042"
@@ -101,8 +147,17 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.submitBtn} onPress={handleRegister} activeOpacity={0.8}>
-            <Text style={styles.submitBtnText}>Submit Registration</Text>
+          <TouchableOpacity 
+            style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
+            onPress={handleRegister} 
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.submitBtnText}>Submit Registration</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity 

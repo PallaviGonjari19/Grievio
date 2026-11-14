@@ -6,24 +6,54 @@ import {
   TextInput, 
   TouchableOpacity, 
   SafeAreaView, 
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS, SPACING, RADIUS } from '../src/constants/theme';
+import { loginUser } from '../src/services/api';
 
 export default function LoginScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [role, setRole] = useState(params.role || 'student');
   const [code, setCode] = useState(params.code || '');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState(params.role === 'staff' ? 'staff_apex' : 'student_apex');
+  const [password, setPassword] = useState('Password123!');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    Alert.alert(
-      'Phase 1 Prototype',
-      `Mobile API Client configured for /api/v1/accounts/token/. Active role: ${role.toUpperCase()}. Full credential flow will be unlocked in Phase 2.`
-    );
+  const handleLogin = async () => {
+    if (!username.trim() || !password) {
+      Alert.alert('Missing Fields', 'Please enter your username/email and password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { user } = await loginUser(username.trim(), password);
+      setLoading(false);
+
+      if (user.approval_status === 'PENDING') {
+        Alert.alert(
+          'Registration Pending',
+          `Your account is awaiting approval by the College Administrator for ${user.institution_name || 'your institution'}.`
+        );
+      } else if (user.approval_status === 'REJECTED') {
+        Alert.alert(
+          'Registration Rejected',
+          `Your application was not approved. Reason: ${user.rejection_reason || 'Unverified credentials'}`
+        );
+      } else {
+        Alert.alert(
+          'Authentication Successful',
+          `Welcome, ${user.first_name || user.username}!\nRole: ${user.role}\nInstitution: ${user.institution_name || 'Apex Tech'}`
+        );
+      }
+    } catch (err) {
+      setLoading(false);
+      const detail = err.response?.data?.detail || err.response?.data?.error || 'Invalid credentials or unable to reach API server.';
+      Alert.alert('Sign In Failed', detail);
+    }
   };
 
   return (
@@ -62,15 +92,14 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>EMAIL OR ID</Text>
+            <Text style={styles.label}>USERNAME OR EMAIL</Text>
             <TextInput
               style={styles.input}
-              placeholder="student@college.edu"
+              placeholder="e.g. student_apex or alex@college.edu"
               placeholderTextColor={COLORS.textMuted}
-              value={email}
-              onChangeText={setEmail}
+              value={username}
+              onChangeText={setUsername}
               autoCapitalize="none"
-              keyboardType="email-address"
             />
           </View>
 
@@ -86,8 +115,17 @@ export default function LoginScreen() {
             />
           </View>
 
-          <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} activeOpacity={0.8}>
-            <Text style={styles.submitBtnText}>Authenticate</Text>
+          <TouchableOpacity 
+            style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
+            onPress={handleLogin} 
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.submitBtnText}>Authenticate</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity 
