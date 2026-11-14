@@ -57,14 +57,16 @@ class User(AbstractUser):
         return self.role == UserRole.SUPERADMIN or self.is_superuser
 
     def is_approved(self):
-        return self.is_platform_superadmin() or self.approval_status == ApprovalStatus.APPROVED
+        if self.is_platform_superadmin():
+            return True
+        if not self.institution or not self.institution.is_active:
+            return False
+        return self.approval_status == ApprovalStatus.APPROVED
 
     def save(self, *args, **kwargs):
-        # Synchronize is_verified flag with approval_status
-        if self.is_platform_superadmin() or self.role == UserRole.ADMIN:
-            # Platform superadmins and designated initial admins are approved
-            if not self.pk and self.approval_status == ApprovalStatus.PENDING:
-                self.approval_status = ApprovalStatus.APPROVED
+        # Platform superadmins are automatically approved
+        if self.is_platform_superadmin():
+            self.approval_status = ApprovalStatus.APPROVED
         self.is_verified = (self.approval_status == ApprovalStatus.APPROVED)
         super().save(*args, **kwargs)
 

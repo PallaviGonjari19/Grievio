@@ -51,3 +51,18 @@ class IsPlatformSuperAdmin(permissions.BasePermission):
             request.user.is_authenticated and 
             request.user.is_platform_superadmin()
         )
+
+class IsCollegeAdminOrReadOnly(permissions.BasePermission):
+    """
+    Grants write permissions only to College Administrators and Platform Super Admins.
+    Read permissions are granted to any authenticated and approved user in the institution.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if not request.user.is_approved():
+            return False
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_institution_admin() or request.user.is_platform_superadmin()
+

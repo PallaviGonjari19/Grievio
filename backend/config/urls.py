@@ -51,7 +51,30 @@ def api_root(request):
         }
     })
 
+def root_index(request):
+    """Root landing endpoint providing service information and API discovery."""
+    return JsonResponse({
+        "platform": "Grievio",
+        "tagline": "Every concern deserves a resolution.",
+        "description": "Multi-institution Campus Grievance and Maintenance Platform Core API",
+        "status": "online",
+        "version": "1.0.0",
+        "web_client": "http://localhost:5173",
+        "endpoints": {
+            "health": "/api/health/",
+            "api_root": "/api/v1/",
+            "admin": "/admin/",
+            "accounts": "/api/v1/accounts/",
+            "institutions": "/api/v1/institutions/",
+            "departments": "/api/v1/departments/",
+            "complaints": "/api/v1/complaints/",
+            "notifications": "/api/v1/notifications/",
+            "reporting": "/api/v1/reporting/",
+        }
+    })
+
 urlpatterns = [
+    path('', root_index, name='root_index'),
     path('admin/', admin.site.urls),
     path('api/health/', health_check, name='health_check'),
     path('api/v1/', api_root, name='api_root'),

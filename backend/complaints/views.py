@@ -144,6 +144,22 @@ class ComplaintStatusUpdateView(APIView):
 
         return Response(ComplaintDetailSerializer(complaint).data, status=status.HTTP_200_OK)
 
+def check_complaint_access(user, complaint):
+    """Enforces strict object-level access rules for students and department staff."""
+    if user.is_platform_superadmin() or user.role == UserRole.ADMIN:
+        return True
+    if user.role == UserRole.STUDENT:
+        if complaint.student != user:
+            raise PermissionDenied("You cannot access another student's grievance.")
+        return True
+    if user.role == UserRole.STAFF:
+        is_assigned = (complaint.assigned_staff == user)
+        is_dept = hasattr(user, 'staff_profile') and complaint.department == user.staff_profile.department
+        if not (is_assigned or is_dept):
+            raise PermissionDenied("Staff cannot access grievances outside their assigned department.")
+        return True
+    raise PermissionDenied("Unauthorized role.")
+
 class ComplaintCommentCreateView(generics.CreateAPIView):
     serializer_class = ComplaintCommentSerializer
     permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
@@ -151,12 +167,12 @@ class ComplaintCommentCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         complaint_id = self.kwargs.get('pk')
         user = self.request.user
-        complaint = Complaint.objects.get(pk=complaint_id, institution=user.institution)
-        
-        # Student cannot comment on another's complaint
-        if user.role == UserRole.STUDENT and complaint.student != user:
-            raise PermissionDenied("You cannot comment on another student's grievance.")
-            
+        try:
+            complaint = Complaint.objects.get(pk=complaint_id, institution=user.institution)
+        except Complaint.DoesNotExist:
+            raise PermissionDenied("Complaint not found in your institution.")
+
+        check_complaint_access(user, complaint)
         serializer.save(complaint=complaint, author=user)
 
 class ComplaintAttachmentUploadView(generics.CreateAPIView):
@@ -166,11 +182,11 @@ class ComplaintAttachmentUploadView(generics.CreateAPIView):
     def perform_create(self, serializer):
         complaint_id = self.kwargs.get('pk')
         user = self.request.user
-        complaint = Complaint.objects.get(pk=complaint_id, institution=user.institution)
-        
-        # Student cannot attach to another's complaint
-        if user.role == UserRole.STUDENT and complaint.student != user:
-            raise PermissionDenied("You cannot attach files to another student's grievance.")
-            
+        try:
+            complaint = Complaint.objects.get(pk=complaint_id, institution=user.institution)
+        except Complaint.DoesNotExist:
+            raise PermissionDenied("Complaint not found in your institution.")
+
+        check_complaint_access(user, complaint)
         serializer.save(complaint=complaint, uploaded_by=user)
 

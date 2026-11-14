@@ -1,10 +1,11 @@
 from rest_framework import generics, permissions
+from accounts.permissions import IsCollegeAdminOrReadOnly
 from .models import Department, ComplaintCategory
 from .serializers import DepartmentSerializer, ComplaintCategorySerializer
 
 class DepartmentListView(generics.ListCreateAPIView):
     serializer_class = DepartmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCollegeAdminOrReadOnly]
 
     def get_queryset(self):
         user = self.request.user
@@ -17,7 +18,7 @@ class DepartmentListView(generics.ListCreateAPIView):
 
 class DepartmentDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = DepartmentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCollegeAdminOrReadOnly]
 
     def get_queryset(self):
         user = self.request.user
@@ -27,7 +28,7 @@ class DepartmentDetailView(generics.RetrieveUpdateAPIView):
 
 class DepartmentCategoriesListView(generics.ListCreateAPIView):
     serializer_class = ComplaintCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCollegeAdminOrReadOnly]
 
     def get_queryset(self):
         dept_id = self.kwargs.get('department_id')

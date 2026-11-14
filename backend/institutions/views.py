@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from accounts.permissions import IsCollegeAdminOrReadOnly
 from .models import Institution, CampusLocation
 from .serializers import InstitutionPublicSerializer, InstitutionDetailSerializer, CampusLocationSerializer
 
@@ -29,9 +30,9 @@ class CurrentInstitutionView(generics.RetrieveAPIView):
         return self.request.user.institution
 
 class CampusLocationListView(generics.ListCreateAPIView):
-    """List and create campus locations within the authenticated institution."""
+    """List campus locations (any member) and create new locations (admin only)."""
     serializer_class = CampusLocationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCollegeAdminOrReadOnly]
 
     def get_queryset(self):
         user = self.request.user
