@@ -104,7 +104,7 @@ export default function StudentDashboard() {
   });
 
   return (
-    <DashboardLayout activeTab="overview">
+    <DashboardLayout activeTab="overview" onSelectComplaint={(id) => setSelectedComplaintId(id)}>
       <div className="space-y-8">
         {/* Success Toast */}
         {successToast && (
@@ -259,7 +259,16 @@ export default function StudentDashboard() {
                       <td className="py-3.5 px-3 text-slate-600">{c.department_name}</td>
                       <td className="py-3.5 px-3 text-slate-500">{c.location_name || 'Campus'}</td>
                       <td className="py-3.5 px-3">{getPriorityBadge(c.priority)}</td>
-                      <td className="py-3.5 px-3">{getStatusBadge(c.status)}</td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex flex-col gap-1 items-start">
+                          {getStatusBadge(c.status)}
+                          {c.is_overdue && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700 flex items-center gap-0.5">
+                              ⚠️ SLA Overdue
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3.5 px-3 text-slate-500">{c.assigned_staff_name || 'Triage in progress'}</td>
                       <td className="py-3.5 px-3 text-right">
                         <span className="text-xs font-semibold text-brand-600 group-hover:underline flex items-center justify-end gap-1">

@@ -47,6 +47,19 @@ class Complaint(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+    @property
+    def is_overdue(self):
+        if self.status in [ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED, ComplaintStatus.REJECTED]:
+            return False
+        sla_hours = self.department.sla_hours if self.department else 24
+        deadline = self.created_at + timezone.timedelta(hours=sla_hours)
+        return timezone.now() > deadline
+
+    @property
+    def sla_deadline(self):
+        sla_hours = self.department.sla_hours if self.department else 24
+        return self.created_at + timezone.timedelta(hours=sla_hours)
+
     def save(self, *args, **kwargs):
         if not self.ticket_number:
             year = timezone.now().strftime('%y')

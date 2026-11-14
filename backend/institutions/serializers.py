@@ -7,6 +7,10 @@ class InstitutionPublicSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'code', 'slug', 'website', 'logo', 'is_active']
 
 class InstitutionDetailSerializer(serializers.ModelSerializer):
+    departments_count = serializers.IntegerField(source='departments.count', read_only=True)
+    users_count = serializers.IntegerField(source='users.count', read_only=True)
+    complaints_count = serializers.IntegerField(source='complaints.count', read_only=True)
+
     class Meta:
         model = Institution
         fields = '__all__'

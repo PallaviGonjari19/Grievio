@@ -1,9 +1,33 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from accounts.permissions import IsCollegeAdminOrReadOnly
-from .models import Institution, CampusLocation
+from accounts.permissions import IsCollegeAdminOrReadOnly, IsPlatformSuperAdmin
+from .models import Institution, CampusLocation, InstitutionStatus
 from .serializers import InstitutionPublicSerializer, InstitutionDetailSerializer, CampusLocationSerializer
+
+class InstitutionListCreateView(generics.ListCreateAPIView):
+    """Platform Super Admin view to list all colleges and provision new educational institutions."""
+    serializer_class = InstitutionDetailSerializer
+    permission_classes = [permissions.IsAuthenticated, IsPlatformSuperAdmin]
+    queryset = Institution.objects.all().order_by('-created_at')
+
+class InstitutionStatusUpdateView(APIView):
+    """Platform Super Admin endpoint to activate, suspend, or deactivate a college."""
+    permission_classes = [permissions.IsAuthenticated, IsPlatformSuperAdmin]
+
+    def patch(self, request, pk):
+        try:
+            institution = Institution.objects.get(pk=pk)
+        except Institution.DoesNotExist:
+            return Response({"error": "Institution not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status not in InstitutionStatus.values:
+            return Response({"error": f"Invalid status: '{new_status}'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        institution.status = new_status
+        institution.save()
+        return Response(InstitutionDetailSerializer(institution).data, status=status.HTTP_200_OK)
 
 class InstitutionLookupView(APIView):
     """Public lookup to verify a college code and retrieve public metadata."""

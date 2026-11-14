@@ -250,15 +250,19 @@ stateDiagram-v2
 - [x] Native mobile grievance filing, technician queue, and interactive details screens in Expo.
 - [x] Automated test suite expanded to 18 comprehensive tests (18/18 passing).
 
-### Phase 4: Notifications, In-App Alert Center & SLA Escalation (Current Status: Next)
-- [ ] Push notifications for mobile (Expo Notifications) and in-app alert center.
-- [ ] Student resolution confirmation and reopening dispute workflow.
-- [ ] Automated background tasks (Celery/Cron) to track SLA breaches and trigger admin escalation alerts.
+### Phase 4: Notifications, In-App Alert Center & SLA Escalation (Current Status: Complete)
+- [x] In-app notification center in Web top bar with unread count badge, auto-polling, and one-click ticket preview.
+- [x] Batch notification management (`mark-all-read` endpoint and clear action).
+- [x] Dynamic SLA tracking (`is_overdue`, `sla_deadline`) based on department turnaround targets.
+- [x] Visual SLA breach callouts in ticket tables and detail modals across Student, Staff, and Admin consoles.
+- [x] Background management command (`check_sla_escalations`) to audit active grievances and dispatch escalation alerts.
+- [x] Institutional SLA compliance rate and turnaround metrics in `reporting` service.
 
-### Phase 5: Institutional Analytics, Super Admin Console & Hardening
-- [ ] College Administrator analytics dashboard (department turnaround time, resolution rate, overdue breakdown).
-- [ ] Platform Super Administrator portal (college onboarding, subscription status, system telemetry).
-- [ ] Production Docker containers, reverse proxy configurations, and cloud deployment guides.
+### Phase 5: Institutional Analytics, Super Admin Console & Hardening (Current Status: Complete)
+- [x] College Administrator analytics dashboard (department turnaround time, resolution rate, overdue breakdown, SLA compliance).
+- [x] Platform Super Administrator portal (college onboarding, activation/suspension lifecycle, system telemetry).
+- [x] Production Docker containers (`docker-compose.yml`, `backend/Dockerfile`, `web/Dockerfile`, Nginx reverse proxy).
+- [x] Production deployment operations handbook (`docs/DEPLOYMENT.md`).
 
 ---
 

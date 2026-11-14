@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [feedbackMsg, setFeedbackMsg] = useState('');
@@ -41,14 +42,16 @@ export default function AdminDashboard() {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [pendingRes, deptsRes, compRes] = await Promise.all([
+      const [pendingRes, deptsRes, compRes, metricsRes] = await Promise.all([
         apiClient.get('/accounts/pending-users/'),
         apiClient.get('/departments/'),
-        apiClient.get('/complaints/')
+        apiClient.get('/complaints/'),
+        apiClient.get('/reporting/metrics/').catch(() => ({ data: null }))
       ]);
       setPendingUsers(pendingRes.data.results || pendingRes.data);
       setDepartments(deptsRes.data.results || deptsRes.data);
       setComplaints(compRes.data.results || compRes.data);
+      if (metricsRes.data) setMetrics(metricsRes.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -144,7 +147,7 @@ export default function AdminDashboard() {
   });
 
   return (
-    <DashboardLayout activeTab="overview">
+    <DashboardLayout activeTab="overview" onSelectComplaint={(id) => setSelectedComplaintId(id)}>
       <div className="space-y-8">
         {/* Header Title Banner */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -188,25 +191,34 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Campus Grievances</span>
-            <p className="text-2xl font-black text-slate-900">{complaints.length}</p>
-            <p className="text-[11px] text-slate-500">Logged across all departments</p>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active & Overdue Tickets</span>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl font-black text-slate-900">
+                {complaints.filter((c) => ['SUBMITTED', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED'].includes(c.status)).length}
+              </p>
+              {complaints.filter((c) => c.is_overdue).length > 0 && (
+                <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                  {complaints.filter((c) => c.is_overdue).length} Overdue
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500">Active maintenance queue</p>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Open & In Progress</span>
-            <p className="text-2xl font-black text-brand-600">
-              {complaints.filter((c) => ['SUBMITTED', 'ACKNOWLEDGED', 'ASSIGNED', 'IN_PROGRESS', 'REOPENED'].includes(c.status)).length}
-            </p>
-            <p className="text-[11px] text-slate-500">Active maintenance tickets</p>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Resolved Concerns</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">SLA Compliance Rate</span>
             <p className="text-2xl font-black text-emerald-600">
-              {complaints.filter((c) => ['RESOLVED', 'CLOSED'].includes(c.status)).length}
+              {metrics?.summary?.sla_compliance_percent ?? 100}%
             </p>
-            <p className="text-[11px] text-slate-500">Completed & confirmed</p>
+            <p className="text-[11px] text-slate-500">Turnaround within targets</p>
+          </div>
+
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average Resolution Time</span>
+            <p className="text-2xl font-black text-brand-600">
+              {metrics?.summary?.avg_turnaround_hours ?? 0}h
+            </p>
+            <p className="text-[11px] text-slate-500">From submission to fix</p>
           </div>
         </div>
 
@@ -401,7 +413,16 @@ export default function AdminDashboard() {
                       <td className="py-3.5 px-3 text-slate-600">{c.department_name}</td>
                       <td className="py-3.5 px-3 text-slate-700">{c.student_name || 'Student'}</td>
                       <td className="py-3.5 px-3">{getPriorityBadge(c.priority)}</td>
-                      <td className="py-3.5 px-3">{getStatusBadge(c.status)}</td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex flex-col gap-1 items-start">
+                          {getStatusBadge(c.status)}
+                          {c.is_overdue && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700 flex items-center gap-0.5">
+                              ⚠️ SLA Overdue
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3.5 px-3 text-slate-600 font-medium">
                         {c.assigned_staff_name || <span className="text-slate-400 italic">Unassigned</span>}
                       </td>

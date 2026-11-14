@@ -1,4 +1,5 @@
 from django.db.models import Count, Avg, F
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
@@ -19,11 +20,11 @@ class DashboardMetricsView(APIView):
             )
 
         if user.is_platform_superadmin():
-            qs = Complaint.objects.all()
+            qs = Complaint.objects.all().select_related('department')
         else:
             if not user.institution:
                 return Response({"error": "No institution associated."}, status=status.HTTP_400_BAD_REQUEST)
-            qs = Complaint.objects.filter(institution=user.institution)
+            qs = Complaint.objects.filter(institution=user.institution).select_related('department')
 
         total_count = qs.count()
         status_breakdown = dict(qs.values_list('status').annotate(total=Count('id')))
@@ -41,14 +42,35 @@ class DashboardMetricsView(APIView):
             ComplaintStatus.IN_PROGRESS,
             ComplaintStatus.REOPENED,
         ]
-        open_count = qs.filter(status__in=open_statuses).count()
+        open_qs = qs.filter(status__in=open_statuses)
+        open_count = open_qs.count()
         resolved_count = qs.filter(status__in=[ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED]).count()
+
+        # Calculate overdue count
+        overdue_count = sum(1 for c in open_qs if c.is_overdue)
+
+        # Calculate SLA compliance & turnaround
+        resolved_qs = qs.filter(status__in=[ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED], resolved_at__isnull=False)
+        durations = []
+        within_sla_count = 0
+        for c in resolved_qs:
+            delta_hours = (c.resolved_at - c.created_at).total_seconds() / 3600
+            durations.append(delta_hours)
+            sla_hours = c.department.sla_hours if c.department else 24
+            if delta_hours <= sla_hours:
+                within_sla_count += 1
+        
+        avg_turnaround_hours = round(sum(durations) / len(durations), 1) if durations else 0
+        sla_compliance_percent = round((within_sla_count / len(durations) * 100), 1) if durations else 100.0
 
         return Response({
             "summary": {
                 "total_complaints": total_count,
                 "open_complaints": open_count,
                 "resolved_complaints": resolved_count,
+                "overdue_complaints": overdue_count,
+                "avg_turnaround_hours": avg_turnaround_hours,
+                "sla_compliance_percent": sla_compliance_percent,
                 "resolution_rate_percent": round((resolved_count / total_count * 100), 1) if total_count > 0 else 0,
             },
             "by_status": status_breakdown,

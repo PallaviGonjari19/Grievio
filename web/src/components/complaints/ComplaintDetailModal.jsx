@@ -215,6 +215,11 @@ export default function ComplaintDetailModal({ complaintId, isOpen, onClose, onU
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getPriorityColor(complaint.priority)}`}>
                   {complaint.priority}
                 </span>
+                {complaint.is_overdue && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 animate-pulse">
+                    ⚠️ SLA BREACHED
+                  </span>
+                )}
               </>
             )}
           </div>

@@ -112,7 +112,7 @@ export default function StaffDashboard() {
   });
 
   return (
-    <DashboardLayout activeTab="overview">
+    <DashboardLayout activeTab="overview" onSelectComplaint={(id) => setSelectedComplaintId(id)}>
       <div className="space-y-8">
         {/* Toast */}
         {actionSuccess && (
@@ -264,7 +264,16 @@ export default function StaffDashboard() {
                       <td className="py-3.5 px-3 text-slate-500">{c.location_name || 'Campus'}</td>
                       <td className="py-3.5 px-3 text-slate-700">{c.student_name || 'Student'}</td>
                       <td className="py-3.5 px-3">{getPriorityBadge(c.priority)}</td>
-                      <td className="py-3.5 px-3">{getStatusBadge(c.status)}</td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex flex-col gap-1 items-start">
+                          {getStatusBadge(c.status)}
+                          {c.is_overdue && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700 flex items-center gap-0.5">
+                              ⚠️ SLA Overdue
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3.5 px-3 text-slate-600">
                         {c.assigned_staff === user?.id ? (
                           <span className="font-semibold text-brand-600">You</span>

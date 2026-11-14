@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../common/NotificationBell';
 import { 
   ShieldCheck, 
   LogOut, 
@@ -10,11 +11,10 @@ import {
   FileText, 
   Users, 
   Settings, 
-  Bell,
   ChevronRight
 } from 'lucide-react';
 
-export default function DashboardLayout({ children, activeTab = 'overview' }) {
+export default function DashboardLayout({ children, activeTab = 'overview', onSelectComplaint }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -53,7 +53,9 @@ export default function DashboardLayout({ children, activeTab = 'overview' }) {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <NotificationBell onSelectComplaint={onSelectComplaint} />
+
             <div className="flex items-center gap-2">
               {getRoleBadge(user?.role)}
               <div className="text-right hidden sm:block">
@@ -67,7 +69,7 @@ export default function DashboardLayout({ children, activeTab = 'overview' }) {
             <button
               onClick={() => logout().then(() => navigate('/login'))}
               title="Sign Out"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
