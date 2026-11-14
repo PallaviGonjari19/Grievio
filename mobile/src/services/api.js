@@ -66,5 +66,50 @@ export const registerUser = async (data) => {
   return res.data;
 };
 
+export const fetchComplaints = async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const url = query ? `/complaints/?${query}` : '/complaints/';
+  const res = await mobileApi.get(url);
+  return res.data.results || res.data;
+};
+
+export const fetchComplaintDetail = async (id) => {
+  const res = await mobileApi.get(`/complaints/${id}/`);
+  return res.data;
+};
+
+export const createComplaint = async (data) => {
+  const res = await mobileApi.post('/complaints/', data);
+  return res.data;
+};
+
+export const updateComplaintStatus = async (id, payload) => {
+  const res = await mobileApi.patch(`/complaints/${id}/status/`, payload);
+  return res.data;
+};
+
+export const addComplaintComment = async (id, message, isInternal = false) => {
+  const res = await mobileApi.post(`/complaints/${id}/comments/`, {
+    message,
+    is_internal: isInternal,
+  });
+  return res.data;
+};
+
+export const fetchDepartments = async () => {
+  const res = await mobileApi.get('/departments/');
+  return res.data.results || res.data;
+};
+
+export const fetchCategories = async (deptId) => {
+  const res = await mobileApi.get(`/departments/categories/?department=${deptId}`);
+  return res.data.results || res.data;
+};
+
+export const fetchLocations = async () => {
+  const res = await mobileApi.get('/institutions/locations/');
+  return res.data.results || res.data;
+};
+
 export default mobileApi;
 

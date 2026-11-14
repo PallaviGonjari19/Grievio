@@ -241,12 +241,16 @@ stateDiagram-v2
 - [x] Database seed command (`seed_demo_data`) with realistic multi-institution test accounts.
 - [x] Automated test suite expanded to 15 comprehensive security & role tests (15/15 passing).
 
-### Phase 3: Grievance Lifecycle Engine & Evidence Uploads (Current Status: In Progress)
-- [ ] Multi-step grievance filing form (department selection, category, campus location picker, camera/gallery upload).
-- [ ] Department technician workbench (inbox, status transition controls, resolution proof upload).
-- [ ] Real-time timeline audit trail and bidirectional public/internal comment threads.
+### Phase 3: Grievance Lifecycle Engine & Evidence Uploads (Current Status: Complete)
+- [x] Multi-step grievance filing form (department selection, dynamic category fetching, campus location picker, evidence photo upload).
+- [x] Department technician workbench (inbox, status transition controls, technician assignment, resolution notes, resolution proof upload).
+- [x] Real-time timeline audit trail and bidirectional public/internal comment threads.
+- [x] Student resolution confirmation (close) and reopening dispute workflow with documented reasoning.
+- [x] College Administrator master grievance dispatch console with cross-department filtering and reassignment.
+- [x] Native mobile grievance filing, technician queue, and interactive details screens in Expo.
+- [x] Automated test suite expanded to 18 comprehensive tests (18/18 passing).
 
-### Phase 4: Notifications, Reopening Workflows & SLA Escalation
+### Phase 4: Notifications, In-App Alert Center & SLA Escalation (Current Status: Next)
 - [ ] Push notifications for mobile (Expo Notifications) and in-app alert center.
 - [ ] Student resolution confirmation and reopening dispute workflow.
 - [ ] Automated background tasks (Celery/Cron) to track SLA breaches and trigger admin escalation alerts.

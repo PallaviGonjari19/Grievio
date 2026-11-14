@@ -71,3 +71,26 @@ class LogoutView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+class InstitutionStaffListView(generics.ListAPIView):
+    """Allows authenticated institution members to list approved staff members (optionally filtered by department)."""
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsApprovedUser]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_platform_superadmin():
+            qs = User.objects.filter(role=UserRole.STAFF, approval_status=ApprovalStatus.APPROVED)
+        else:
+            if not user.institution:
+                return User.objects.none()
+            qs = User.objects.filter(
+                institution=user.institution,
+                role=UserRole.STAFF,
+                approval_status=ApprovalStatus.APPROVED
+            )
+
+        dept_id = self.request.query_params.get('department')
+        if dept_id:
+            qs = qs.filter(staff_profile__department_id=dept_id)
+        return qs.order_by('first_name', 'last_name', 'username')
+

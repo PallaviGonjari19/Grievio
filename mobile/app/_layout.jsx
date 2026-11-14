@@ -40,6 +40,30 @@ export default function RootLayout() {
             title: 'Register',
           }}
         />
+        <Stack.Screen
+          name="student"
+          options={{
+            title: 'Student Portal',
+          }}
+        />
+        <Stack.Screen
+          name="staff"
+          options={{
+            title: 'Department Queue',
+          }}
+        />
+        <Stack.Screen
+          name="complaint_new"
+          options={{
+            title: 'Raise Grievance',
+          }}
+        />
+        <Stack.Screen
+          name="complaint_detail"
+          options={{
+            title: 'Grievance Overview',
+          }}
+        />
       </Stack>
     </>
   );

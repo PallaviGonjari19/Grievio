@@ -30,12 +30,14 @@ class ComplaintListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     student_name = serializers.CharField(source='student.get_full_name', read_only=True)
     assigned_staff_name = serializers.CharField(source='assigned_staff.get_full_name', read_only=True)
+    location_name = serializers.CharField(source='location.name', read_only=True)
 
     class Meta:
         model = Complaint
         fields = [
             'id', 'ticket_number', 'title', 'priority', 'status',
             'department', 'department_name', 'category', 'category_name',
+            'location', 'location_name', 'location_details',
             'student', 'student_name', 'assigned_staff', 'assigned_staff_name',
             'created_at', 'updated_at'
         ]
@@ -45,9 +47,11 @@ class ComplaintDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     student_name = serializers.CharField(source='student.get_full_name', read_only=True)
     assigned_staff_name = serializers.CharField(source='assigned_staff.get_full_name', read_only=True)
+    location_name = serializers.CharField(source='location.name', read_only=True)
     attachments = ComplaintAttachmentSerializer(many=True, read_only=True)
     comments = ComplaintCommentSerializer(many=True, read_only=True)
     timeline = ComplaintTimelineSerializer(many=True, read_only=True)
+    file = serializers.FileField(write_only=True, required=False)
 
     class Meta:
         model = Complaint

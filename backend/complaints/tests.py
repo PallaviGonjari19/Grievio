@@ -158,3 +158,78 @@ class ComplaintIsolationTests(TestCase):
         results = res.data.get('results', res.data)
         # Now sees both: Plumbing (by dept) and Electrical (by personal assignment)
         self.assertEqual(len(results), 2)
+
+    def test_complaint_filtering_by_status_and_priority(self):
+        """Verify query parameter filters for status and priority."""
+        client = APIClient()
+        client.force_authenticate(user=self.staff_plumber)
+
+        url = reverse('complaint_list_create') + "?priority=MEDIUM"
+        res = client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        results = res.data.get('results', res.data)
+        self.assertEqual(len(results), 1)
+
+        url_no_match = reverse('complaint_list_create') + "?priority=CRITICAL"
+        res_no_match = client.get(url_no_match)
+        self.assertEqual(len(res_no_match.data.get('results', res_no_match.data)), 0)
+
+    def test_student_resolution_confirmation_and_reopen(self):
+        """Students can close or reopen resolved tickets, but not submitted ones."""
+        client = APIClient()
+        client.force_authenticate(user=self.student_alpha)
+        status_url = reverse('complaint_status_update', kwargs={'pk': self.comp_plumbing.id})
+
+        # Cannot close when SUBMITTED
+        res = client.patch(status_url, {"status": "CLOSED"}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Mark ticket as RESOLVED by staff
+        self.comp_plumbing.status = ComplaintStatus.RESOLVED
+        self.comp_plumbing.save()
+
+        # Reopen ticket with reason
+        res_reopen = client.patch(status_url, {
+            "status": "REOPENED",
+            "reopen_reason": "Faucet is still leaking when turned on high."
+        }, format='json')
+        self.assertEqual(res_reopen.status_code, status.HTTP_200_OK)
+        self.comp_plumbing.refresh_from_db()
+        self.assertEqual(self.comp_plumbing.status, ComplaintStatus.REOPENED)
+        self.assertEqual(self.comp_plumbing.reopen_reason, "Faucet is still leaking when turned on high.")
+
+        # Re-resolve and confirm resolution (CLOSE)
+        self.comp_plumbing.status = ComplaintStatus.RESOLVED
+        self.comp_plumbing.save()
+
+        res_close = client.patch(status_url, {"status": "CLOSED"}, format='json')
+        self.assertEqual(res_close.status_code, status.HTTP_200_OK)
+        self.comp_plumbing.refresh_from_db()
+        self.assertEqual(self.comp_plumbing.status, ComplaintStatus.CLOSED)
+        self.assertIsNotNone(self.comp_plumbing.closed_at)
+
+    def test_staff_assign_and_resolve(self):
+        """Staff can claim/assign technician and mark ticket resolved with notes."""
+        client = APIClient()
+        client.force_authenticate(user=self.staff_plumber)
+        status_url = reverse('complaint_status_update', kwargs={'pk': self.comp_plumbing.id})
+
+        res_assign = client.patch(status_url, {
+            "assigned_staff_id": self.staff_plumber.id,
+            "status": "IN_PROGRESS"
+        }, format='json')
+        self.assertEqual(res_assign.status_code, status.HTTP_200_OK)
+        self.comp_plumbing.refresh_from_db()
+        self.assertEqual(self.comp_plumbing.assigned_staff, self.staff_plumber)
+        self.assertEqual(self.comp_plumbing.status, ComplaintStatus.IN_PROGRESS)
+
+        # Mark RESOLVED
+        res_resolve = client.patch(status_url, {
+            "status": "RESOLVED",
+            "resolution_notes": "Replaced valve and washer. Tested under pressure."
+        }, format='json')
+        self.assertEqual(res_resolve.status_code, status.HTTP_200_OK)
+        self.comp_plumbing.refresh_from_db()
+        self.assertEqual(self.comp_plumbing.status, ComplaintStatus.RESOLVED)
+        self.assertEqual(self.comp_plumbing.resolution_notes, "Replaced valve and washer. Tested under pressure.")
+        self.assertIsNotNone(self.comp_plumbing.resolved_at)

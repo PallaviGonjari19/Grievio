@@ -44,10 +44,11 @@ export default function LoginScreen() {
           `Your application was not approved. Reason: ${user.rejection_reason || 'Unverified credentials'}`
         );
       } else {
-        Alert.alert(
-          'Authentication Successful',
-          `Welcome, ${user.first_name || user.username}!\nRole: ${user.role}\nInstitution: ${user.institution_name || 'Apex Tech'}`
-        );
+        if (user.role === 'STAFF') {
+          router.replace('/staff');
+        } else {
+          router.replace('/student');
+        }
       }
     } catch (err) {
       setLoading(false);
