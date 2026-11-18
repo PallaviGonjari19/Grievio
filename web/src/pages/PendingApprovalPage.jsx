@@ -12,6 +12,12 @@ export default function PendingApprovalPage() {
   const handleRefresh = async () => {
     setChecking(true);
     setMsg('');
+    const token = localStorage.getItem('grievio_access_token');
+    if (!token) {
+      setChecking(false);
+      navigate('/login');
+      return;
+    }
     const updated = await refreshProfile();
     setChecking(false);
 
@@ -20,12 +26,39 @@ export default function PendingApprovalPage() {
       else if (updated.role === 'STAFF') navigate('/staff/dashboard');
       else if (updated.role === 'ADMIN') navigate('/admin/dashboard');
       else navigate('/');
-    } else {
+    } else if (updated) {
       setMsg('Status is still Pending. Your College Administrator has not approved your registration yet.');
+    } else {
+      setMsg('Session expired or not signed in. Redirecting to login...');
+      setTimeout(() => navigate('/login'), 1200);
     }
   };
 
   const isRejected = user?.approval_status === 'REJECTED';
+
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto py-16 px-4 sm:px-6">
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-8 text-center space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Please Sign In</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Your registration has been submitted and approved. Please sign in with your username and password to access your dashboard.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-xs transition"
+          >
+            Go to Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-xl mx-auto py-16 px-4 sm:px-6">
