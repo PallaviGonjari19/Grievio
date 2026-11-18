@@ -28,6 +28,7 @@ import {
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
   const [institutions, setInstitutions] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -47,21 +48,56 @@ export default function SuperAdminDashboard() {
   const [feedback, setFeedback] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
 
-  const fetchInstitutions = async () => {
+  const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/institutions/');
-      setInstitutions(res.data.results || res.data);
+      const [instRes, pendingRes] = await Promise.all([
+        apiClient.get('/institutions/'),
+        apiClient.get('/accounts/pending-users/').catch(() => ({ data: [] }))
+      ]);
+      setInstitutions(instRes.data.results || instRes.data);
+      setPendingUsers(pendingRes.data.results || pendingRes.data);
     } catch (err) {
-      console.error('Failed to load institutions directory:', err);
+      console.error('Failed to load dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInstitutions();
+    fetchDashboardData();
   }, []);
+
+  const handleApproveUser = async (userId, username) => {
+    setActionLoadingId(userId);
+    setFeedback('');
+    try {
+      await apiClient.post(`/accounts/users/${userId}/approve/`, { action: 'approve' });
+      setFeedback(`✓ User ${username} successfully approved! They can now log in and file grievances.`);
+      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to approve registration.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRejectUser = async (userId, username) => {
+    const reason = window.prompt(`Enter reason for rejecting ${username}:`, 'Unverified credentials');
+    if (reason === null) return;
+
+    setActionLoadingId(userId);
+    setFeedback('');
+    try {
+      await apiClient.post(`/accounts/users/${userId}/approve/`, { action: 'reject', reason });
+      setFeedback(`✗ User ${username} rejected.`);
+      setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to reject registration.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleStatusChange = async (instId, targetStatus) => {
     setActionLoadingId(instId);
@@ -96,7 +132,7 @@ export default function SuperAdminDashboard() {
         website: '',
         status: 'ACTIVE'
       });
-      fetchInstitutions();
+      fetchDashboardData();
     } catch (err) {
       console.error('Provisioning error:', err);
       const errData = err.response?.data;
@@ -194,6 +230,78 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
 
+        {/* Pending Registration Queue (Platform-Wide) */}
+        {pendingUsers.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden space-y-4 p-6">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base font-bold text-slate-900">Platform-Wide Pending Registrations</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                  {pendingUsers.length} Pending Approval
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider font-semibold text-[10px]">
+                    <th className="py-3 px-3">Applicant Name</th>
+                    <th className="py-3 px-3">Username</th>
+                    <th className="py-3 px-3">College & Code</th>
+                    <th className="py-3 px-3">Email</th>
+                    <th className="py-3 px-3">Role</th>
+                    <th className="py-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {pendingUsers.map((pending) => (
+                    <tr key={pending.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3.5 px-3 font-semibold text-slate-900">
+                        {pending.first_name ? `${pending.first_name} ${pending.last_name}` : pending.username}
+                      </td>
+                      <td className="py-3.5 px-3 font-mono text-slate-600">{pending.username}</td>
+                      <td className="py-3.5 px-3">
+                        <span className="font-semibold text-purple-700">{pending.institution_name}</span>
+                        <span className="text-slate-400 ml-1">({pending.institution_code})</span>
+                      </td>
+                      <td className="py-3.5 px-3 text-slate-600">{pending.email}</td>
+                      <td className="py-3.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          pending.role === 'STAFF' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {pending.role}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleApproveUser(pending.id, pending.username)}
+                            disabled={actionLoadingId === pending.id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            Approve User
+                          </button>
+                          <button
+                            onClick={() => handleRejectUser(pending.id, pending.username)}
+                            disabled={actionLoadingId === pending.id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 font-semibold text-[11px] transition disabled:opacity-50 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* College Instances Directory */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6 space-y-4">
           <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -219,7 +327,7 @@ export default function SuperAdminDashboard() {
                 />
               </div>
               <button
-                onClick={fetchInstitutions}
+                onClick={fetchDashboardData}
                 disabled={loading}
                 className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
                 title="Refresh Directory"

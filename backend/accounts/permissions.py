@@ -35,12 +35,12 @@ class IsDepartmentStaff(permissions.BasePermission):
         )
 
 class IsCollegeAdmin(permissions.BasePermission):
-    """Grants access only to college administrators for their institution."""
+    """Grants access only to college administrators for their institution, or platform superadmins."""
     def has_permission(self, request, view):
         return bool(
             request.user and 
             request.user.is_authenticated and 
-            request.user.is_institution_admin()
+            (request.user.is_institution_admin() or request.user.is_platform_superadmin())
         )
 
 class IsPlatformSuperAdmin(permissions.BasePermission):
