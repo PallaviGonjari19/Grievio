@@ -47,10 +47,17 @@ export function AuthProvider({ children }) {
       setUser(profileRes.data);
       return { success: true, user: profileRes.data };
     } catch (err) {
-      const errorMsg =
+      let errorMsg =
         err.response?.data?.detail ||
-        err.response?.data?.error ||
-        'Authentication failed. Please verify your username and password.';
+        err.response?.data?.error;
+      
+      if (!errorMsg) {
+        if (!err.response) {
+          errorMsg = 'Cannot connect to the backend server. Please verify the API is running on http://127.0.0.1:8000.';
+        } else {
+          errorMsg = 'Authentication failed. Please verify your username and password.';
+        }
+      }
       setAuthError(errorMsg);
       return { success: false, error: errorMsg };
     }
