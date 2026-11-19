@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -25,19 +25,81 @@ import {
   CheckCheck,
   MapPin,
   Wrench,
-  GraduationCap
+  GraduationCap,
+  Search,
+  Copy,
+  Mail,
+  Send,
+  HelpCircle,
+  QrCode
 } from 'lucide-react';
-import { checkSystemHealth } from '../services/api';
+import apiClient, { checkSystemHealth } from '../services/api';
 
 export default function LandingPage() {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [healthStatus, setHealthStatus] = useState({ checking: true, online: false });
   const [activeRoleTab, setActiveRoleTab] = useState('student');
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  // College Directory state
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [institutionsList, setInstitutionsList] = useState([
+    { id: 1, name: 'Apex Institute of Technology', code: 'APEX-TECH', address: 'Bangalore, Karnataka', depts: 3, status: 'ACTIVE' },
+    { id: 2, name: 'College of Engineering Pune', code: 'COEP-COMP', address: 'Shivajinagar, Pune, MH', depts: 3, status: 'ACTIVE' },
+    { id: 3, name: 'Beacon Engineering University', code: 'BEACON-ENG', address: 'Hyderabad, Telangana', depts: 2, status: 'ACTIVE' },
+  ]);
+
+  // College Onboarding Form state
+  const [onboardForm, setOnboardForm] = useState({ collegeName: '', officialEmail: '', contactPerson: '', studentCount: '1000-5000' });
+  const [onboardSubmitted, setOnboardSubmitted] = useState(false);
+
+  // Auto-scroll handler when arriving with ?section=... or #...
+  useEffect(() => {
+    const targetSection = searchParams.get('section') || location.hash.replace('#', '');
+    if (targetSection) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(targetSection);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, location]);
 
   useEffect(() => {
     checkSystemHealth().then((res) => {
       setHealthStatus({ checking: false, online: res.online, data: res.data });
     });
+
+    // Attempt to fetch live institutions directory
+    apiClient.get('/institutions/')
+      .then((res) => {
+        const data = res.data.results || res.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setInstitutionsList(data);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const copyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleOnboardSubmit = (e) => {
+    e.preventDefault();
+    setOnboardSubmitted(true);
+    setTimeout(() => {
+      setOnboardSubmitted(false);
+      setOnboardForm({ collegeName: '', officialEmail: '', contactPerson: '', studentCount: '1000-5000' });
+    }, 6000);
+  };
 
   const roles = [
     {
@@ -107,6 +169,12 @@ export default function LandingPage() {
   ];
 
   const currentRole = roles.find((r) => r.id === activeRoleTab);
+
+  const filteredColleges = institutionsList.filter((inst) => {
+    if (!collegeSearch.trim()) return true;
+    const q = collegeSearch.toLowerCase();
+    return inst.name?.toLowerCase().includes(q) || inst.code?.toLowerCase().includes(q);
+  });
 
   return (
     <div className="space-y-28 pb-16">
@@ -262,7 +330,7 @@ export default function LandingPage() {
                   <div className="p-3.5 rounded-xl bg-brand-50/80 border border-brand-200 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2 text-brand-900 font-medium">
                       <CheckCheck className="w-4 h-4 text-brand-600 shrink-0" />
-                      <span>Technician uploaded diagnostic proof. Student Pallavi confirmed satisfactory resolution.</span>
+                      <span>Technician uploaded diagnostic proof. Student confirmed satisfactory resolution.</span>
                     </div>
                     <span className="font-bold text-brand-700">Audit Complete</span>
                   </div>
@@ -427,6 +495,221 @@ export default function LandingPage() {
             <p className="text-xs text-slate-500 leading-relaxed">
               Responsive React Web console for campus desks paired with React Native / Expo iOS and Android apps for students and on-site technicians.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION: For Colleges & Institution Directory (#institutions) */}
+      <section id="institutions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-bold uppercase tracking-wider">
+            <Building2 className="w-3.5 h-3.5 text-brand-600" />
+            <span>Campus Network & Directory</span>
+          </div>
+          <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">For Colleges & Universities</h3>
+          <p className="text-slate-600 text-sm leading-relaxed">
+            Students and faculty register using their official college code. Find your institution below or request a dedicated campus tenant.
+          </p>
+        </div>
+
+        {/* Directory & Onboard Form Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left: Interactive College Code Finder */}
+          <div className="lg:col-span-7 bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-md p-6 sm:p-8 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-brand-600" />
+                  Registered Institution Directory
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">Search for your college to obtain your registration code</p>
+              </div>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={collegeSearch}
+                  onChange={(e) => setCollegeSearch(e.target.value)}
+                  placeholder="Search college or code..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none w-48 bg-slate-50/50 hover:bg-white transition"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              {filteredColleges.map((inst) => (
+                <div
+                  key={inst.id}
+                  className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-brand-300 hover:shadow-xs transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-xs font-bold text-slate-900">{inst.name}</h5>
+                      <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                        {inst.status || 'ACTIVE'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400" />
+                      {inst.address || 'Campus Campus'} &bull; {inst.departments_count ?? inst.depts ?? 3} Active Depts
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono font-bold text-xs bg-brand-50 text-brand-700 px-2.5 py-1 rounded-xl border border-brand-200">
+                      {inst.code}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyCode(inst.code)}
+                      title="Copy code for registration"
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-white border border-slate-200 hover:border-brand-300 text-slate-700 hover:text-brand-600 text-xs font-bold transition shadow-2xs cursor-pointer"
+                    >
+                      {copiedCode === inst.code ? (
+                        <>
+                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-emerald-700">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                    <Link
+                      to={`/register?code=${inst.code}`}
+                      className="px-3 py-1 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition shadow-2xs"
+                    >
+                      Join
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Onboard Institution Form */}
+          <div className="lg:col-span-5 bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-md p-6 sm:p-8 space-y-5">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-bold border border-purple-200 mb-1">
+                <Crown className="w-3 h-3 text-purple-600" />
+                <span>Institutional Onboarding</span>
+              </div>
+              <h4 className="text-lg font-bold text-slate-900 tracking-tight">Request Campus Deployment</h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Onboard your college into Grievio's multi-tenant ecosystem with zero infrastructure overhead.
+              </p>
+            </div>
+
+            {onboardSubmitted ? (
+              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3 animate-in fade-in">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <h5 className="text-sm font-bold text-emerald-900">Onboarding Request Received!</h5>
+                <p className="text-xs text-emerald-700 leading-relaxed">
+                  Thank you! Our campus deployment engineering team will review your institution and issue your dedicated admin credentials within 24 hours.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleOnboardSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">University / College Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={onboardForm.collegeName}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, collegeName: e.target.value })}
+                    placeholder="e.g. Indian Institute of Technology"
+                    className="w-full text-xs rounded-xl border border-slate-200 px-3 py-2.5 outline-none focus:border-brand-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Official Dean or Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={onboardForm.officialEmail}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, officialEmail: e.target.value })}
+                    placeholder="registrar@college.edu"
+                    className="w-full text-xs rounded-xl border border-slate-200 px-3 py-2.5 outline-none focus:border-brand-500 font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Contact Person</label>
+                    <input
+                      type="text"
+                      required
+                      value={onboardForm.contactPerson}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, contactPerson: e.target.value })}
+                      placeholder="Dr. Rajesh Kumar"
+                      className="w-full text-xs rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-brand-500 font-medium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Student Capacity</label>
+                    <select
+                      value={onboardForm.studentCount}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, studentCount: e.target.value })}
+                      className="w-full text-xs rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-brand-500 font-medium bg-white"
+                    >
+                      <option value="<1000">&lt; 1,000 Students</option>
+                      <option value="1000-5000">1,000 - 5,000</option>
+                      <option value="5000-15000">5,000 - 15,000</option>
+                      <option value="15000+">15,000+ Students</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-md transition cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Submit Institutional Onboarding Request</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION: Mobile Apps Preview (#apps) */}
+      <section id="apps" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="p-8 sm:p-12 rounded-3xl bg-slate-900 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
+          <div className="space-y-4 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand-300 text-xs font-bold border border-white/10">
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Native Mobile Experience</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              Report grievances on the go with Grievio Mobile
+            </h3>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Equip students and on-site repair technicians with our React Native & Expo app. Camera photo uploads, push notifications, and quick triage right from your pocket.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 text-xs font-mono">
+                <code>cd mobile; npx expo start</code>
+              </div>
+              <span className="text-xs text-slate-400">iOS & Android Expo Go Supported</span>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10 text-center space-y-3 shrink-0">
+            <div className="w-20 h-20 bg-white rounded-xl mx-auto flex items-center justify-center text-slate-900 shadow-md">
+              <QrCode className="w-12 h-12" />
+            </div>
+            <div>
+              <p className="text-xs font-bold">Expo SDK 58 Ready</p>
+              <p className="text-[11px] text-slate-400">Instant dev preview in emulator</p>
+            </div>
           </div>
         </div>
       </section>
